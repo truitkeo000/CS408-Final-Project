@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# AWS EC2 private keys
+*.pem
+
+# Additional environment files
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
