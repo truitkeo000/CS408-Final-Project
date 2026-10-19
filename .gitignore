@@ -228,3 +228,18 @@ __marimo__/
 
 # macOS
 .DS_Store
+
+# Local Python environments
+.venv/
+.venv-old/
+
+# Local database
+db.sqlite3
+
+# TextEdit backups
+*.html.backup
+*.txt.backup
+
+# Python cache
+__pycache__/
+*.pyc

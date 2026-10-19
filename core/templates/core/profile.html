@@ -1,0 +1,23 @@
+{% extends 'core/base.html' %}
+
+{% block title %}My Profile | Campus Compass{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">My Student Profile</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h2 class="h5">Account Information</h2>
+
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>School:</strong>
+            {{ student_profile.school_name|default:"Not provided" }}
+        </p>
+
+        <a href="{% url 'home' %}" class="btn btn-primary">
+            Back to Home
+        </a>
+    </div>
+</div>
+{% endblock %}

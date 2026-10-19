@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ section_name }} | Campus Compass{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body p-5">
+        <h1>{{ section_name }}</h1>
+        <p class="lead">This section is under development.</p>
+        <p>Its functionality will be added during a future project checkpoint.</p>
+        <a href="{% url 'home' %}" class="btn btn-primary">Return Home</a>
+    </div>
+</div>
+{% endblock %}

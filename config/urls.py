@@ -1,20 +1,18 @@
 from django.contrib import admin
-from django.http import HttpResponse
-from django.urls import path
-
-def home(request):
-    return HttpResponse("""
-        <html>
-            <head><title>CS408 Final Project</title></head>
-            <body>
-                <h1>Hello World!</h1>
-                <h2>CS408 Final Project</h2>
-                <p>My Django application is running successfully.</p>
-            </body>
-        </html>
-    """)
+from django.urls import path, include
+from core import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', home),
+    path('', views.home, name='home'),
+    path('register/', views.register, name='register'),
+    path('profile/', views.profile, name='profile'),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('dashboard/', views.section_placeholder, {'section': 'dashboard'}, name='dashboard'),
+    path('calendar/', views.section_placeholder, {'section': 'calendar'}, name='calendar'),
+    path('study/', views.section_placeholder, {'section': 'study'}, name='study'),
+    path('budget/', views.section_placeholder, {'section': 'budget'}, name='budget'),
+    path('goals/', views.section_placeholder, {'section': 'goals'}, name='goals'),
+    path('search/', views.section_placeholder, {'section': 'search'}, name='search'),
+    path('canvas/', views.section_placeholder, {'section': 'canvas'}, name='canvas'),
 ]
