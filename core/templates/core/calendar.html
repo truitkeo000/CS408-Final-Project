@@ -1,0 +1,94 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>My Calendar</h1>
+    <p class="text-muted">
+        Manage your academic, work, and personal events.
+    </p>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Add New Event</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'calendar_add' %}">
+                {% csrf_token %}
+
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+                {% for error in form.non_field_errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary">
+                    Add Event
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <h2 class="h4 mb-3">Upcoming Events</h2>
+
+    {% for event in events %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5>{{ event.title }}</h5>
+                        <p class="mb-1">
+                            <strong>Type:</strong>
+                            {{ event.get_event_type_display }}
+                        </p>
+                        <p class="mb-1">
+                            <strong>Starts:</strong>
+                            {{ event.starts_at|date:"M d, Y g:i A" }}
+                        </p>
+                        {% if event.ends_at %}
+                            <p class="mb-1">
+                                <strong>Ends:</strong>
+                                {{ event.ends_at|date:"M d, Y g:i A" }}
+                            </p>
+                        {% endif %}
+                        {% if event.notes %}
+                            <p class="mb-1">{{ event.notes }}</p>
+                        {% endif %}
+                        <span class="badge bg-{{ event.status_color|default:'secondary' }}">
+                            {{ event.status|default:"Pending" }}
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'calendar_edit' event.id %}"
+                           class="btn btn-outline-primary btn-sm">
+                            Edit
+                        </a>
+                        <form method="post"
+                              action="{% url 'calendar_delete' event.id %}"
+                              onsubmit="return confirm('Delete this event?');">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="btn btn-outline-danger btn-sm">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted">
+            No events yet. Add your first event above!
+        </p>
+    {% endfor %}
+</div>
+{% endblock %}

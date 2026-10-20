@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
 class StudentProfile(models.Model):
     user = models.OneToOneField(
         User,
@@ -15,3 +14,32 @@ class StudentProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+class CalendarEvent(models.Model):
+    EVENT_TYPES = [
+        ('academic', 'Academic'),
+        ('work', 'Work'),
+        ('personal', 'Personal'),
+    ]
+
+    student = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='calendar_events'
+    )
+    title = models.CharField(max_length=160)
+    event_type = models.CharField(
+        max_length=20,
+        choices=EVENT_TYPES
+    )
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    notes = models.TextField(blank=True)
+    completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
