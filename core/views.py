@@ -4,9 +4,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from datetime import timedelta
 
-from .forms import StudentRegistrationForm, CalendarEventForm
-from .models import StudentProfile, CalendarEvent
+from .forms import StudentRegistrationForm, CalendarEventForm, StudySessionForm
+from .models import StudentProfile, CalendarEvent, StudySession
 
 
 def home(request):
@@ -146,3 +147,89 @@ def calendar_delete(request, event_id):
     )
     event.delete()
     return redirect('calendar')
+
+
+# Study Log views
+
+@login_required
+def study_log(request):
+    sessions = StudySession.objects.filter(
+        student=request.user
+    ).order_by('-study_date', '-created_at')
+
+    # Calculate total study minutes for the current week.
+    today = timezone.localdate()
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=7)
+
+    weekly_sessions = sessions.filter(
+        study_date__gte=week_start,
+        study_date__lt=week_end
+    )
+
+    weekly_minutes = sum(
+        session.duration_minutes for session in weekly_sessions
+    )
+
+    weekly_hours = round(weekly_minutes / 60, 2)
+
+    return render(request, 'core/study_log.html', {
+        'sessions': sessions,
+        'weekly_minutes': weekly_minutes,
+        'weekly_hours': weekly_hours,
+    })
+
+
+@login_required
+def study_add(request):
+    if request.method == 'POST':
+        form = StudySessionForm(request.POST)
+
+        if form.is_valid():
+            session = form.save(commit=False)
+            session.student = request.user
+            session.save()
+            return redirect('study')
+    else:
+        form = StudySessionForm()
+
+    return render(request, 'core/study_form.html', {
+        'form': form,
+        'page_title': 'Add Study Session',
+    })
+
+
+@login_required
+def study_edit(request, session_id):
+    session = get_object_or_404(
+        StudySession,
+        id=session_id,
+        student=request.user
+    )
+
+    if request.method == 'POST':
+        form = StudySessionForm(request.POST, instance=session)
+
+        if form.is_valid():
+            form.save()
+            return redirect('study')
+    else:
+        form = StudySessionForm(instance=session)
+
+    return render(request, 'core/study_form.html', {
+        'form': form,
+        'page_title': 'Edit Study Session',
+    })
+
+
+@login_required
+@require_POST
+def study_delete(request, session_id):
+    session = get_object_or_404(
+        StudySession,
+        id=session_id,
+        student=request.user
+    )
+
+    session.delete()
+    return redirect('study')

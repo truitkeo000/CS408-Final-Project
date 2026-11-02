@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Study Log</h1>
+    <p class="text-muted">
+        Track your study sessions and weekly progress.
+    </p>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>Weekly Study Summary</h5>
+            <h2>{{ weekly_hours }} hours</h2>
+            <p class="mb-0">
+                {{ weekly_minutes }} minutes studied this week
+            </p>
+        </div>
+    </div>
+
+    <a href="{% url 'study_add' %}"
+       class="btn btn-primary mb-3">
+        + Add Study Session
+    </a>
+
+    <h3>Study History</h3>
+
+    {% if sessions %}
+        {% for session in sessions %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5>{{ session.subject }}</h5>
+
+                    <p class="mb-1">
+                        <strong>Date:</strong>
+                        {{ session.study_date|date:"M d, Y" }}
+                    </p>
+
+                    <p class="mb-1">
+                        <strong>Duration:</strong>
+                        {{ session.duration_minutes }} minutes
+                    </p>
+
+                    {% if session.notes %}
+                        <p>{{ session.notes }}</p>
+                    {% endif %}
+
+                    <a href="{% url 'study_edit' session.id %}"
+                       class="btn btn-outline-primary btn-sm">
+                        Edit
+                    </a>
+
+                    <form method="post"
+                          action="{% url 'study_delete' session.id %}"
+                          class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Delete this study session?');">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No study sessions yet. Add your first session!</p>
+    {% endif %}
+</div>
+{% endblock %}
