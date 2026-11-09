@@ -29,9 +29,15 @@ urlpatterns = [
     path('study/<int:session_id>/delete/',
          views.study_delete, name='study_delete'),
 
+     # Budget
+     path('budget/', views.budget, name='budget'),
+     path('budget/add/', views.budget_add, name='budget_add'),
+     path('budget/<int:expense_id>/edit/',
+          views.budget_edit, name='budget_edit'),
+     path('budget/<int:expense_id>/delete/',
+          views.budget_delete, name='budget_delete'),
+
     # Future sections
-    path('budget/', views.section_placeholder,
-         {'section': 'budget'}, name='budget'),
     path('goals/', views.section_placeholder,
          {'section': 'goals'}, name='goals'),
     path('search/', views.section_placeholder,

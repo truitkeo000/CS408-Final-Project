@@ -58,3 +58,18 @@ class StudySession(models.Model):
 
     def __str__(self):
         return f"{self.subject} - {self.study_date}"
+    
+class Expense(models.Model):
+    student = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='expenses'
+    )
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    category = models.CharField(max_length=30)
+    expense_date = models.DateField()
+    description = models.CharField(max_length=180)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.category}: ${self.amount}"

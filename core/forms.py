@@ -10,7 +10,7 @@ class StudentRegistrationForm(UserCreationForm):
         model = User
         fields = ['username', 'email', 'password1', 'password2']
 
-from .models import CalendarEvent, StudySession
+from .models import CalendarEvent, StudySession, Expense
 
 class CalendarEventForm(forms.ModelForm):
     class Meta:
@@ -117,3 +117,12 @@ class StudySessionForm(forms.ModelForm):
             )
 
         return duration
+    
+class ExpenseForm(forms.ModelForm):
+    class Meta:
+        model = Expense
+        fields = ['amount', 'category', 'expense_date', 'description']
+        widgets = {
+            'expense_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.TextInput(),
+        }

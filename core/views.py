@@ -5,7 +5,11 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from datetime import timedelta
-
+from decimal import Decimal
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth
+from .forms import ExpenseForm
+from .models import Expense
 from .forms import StudentRegistrationForm, CalendarEventForm, StudySessionForm
 from .models import StudentProfile, CalendarEvent, StudySession
 
@@ -233,3 +237,85 @@ def study_delete(request, session_id):
 
     session.delete()
     return redirect('study')
+
+@login_required
+def budget(request):
+    expenses = Expense.objects.filter(
+        student=request.user
+    ).order_by('-expense_date')
+
+    total = expenses.aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0.00')
+
+    monthly_totals = (
+        expenses.annotate(month=TruncMonth('expense_date'))
+        .values('month')
+        .annotate(total=Sum('amount'))
+        .order_by('-month')
+    )
+
+    category_totals = (
+        expenses.values('category')
+        .annotate(total=Sum('amount'))
+        .order_by('category')
+    )
+
+    return render(request, 'core/budget.html', {
+        'expenses': expenses,
+        'total': total,
+        'monthly_totals': monthly_totals,
+        'category_totals': category_totals,
+    })
+
+
+@login_required
+def budget_add(request):
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST)
+        if form.is_valid():
+            expense = form.save(commit=False)
+            expense.student = request.user
+            expense.save()
+            return redirect('budget')
+    else:
+        form = ExpenseForm()
+
+    return render(request, 'core/budget_form.html', {
+        'form': form,
+        'page_title': 'Add Expense',
+    })
+
+
+@login_required
+def budget_edit(request, expense_id):
+    expense = get_object_or_404(
+        Expense,
+        id=expense_id,
+        student=request.user
+    )
+
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST, instance=expense)
+        if form.is_valid():
+            form.save()
+            return redirect('budget')
+    else:
+        form = ExpenseForm(instance=expense)
+
+    return render(request, 'core/budget_form.html', {
+        'form': form,
+        'page_title': 'Edit Expense',
+    })
+
+
+@login_required
+@require_POST
+def budget_delete(request, expense_id):
+    expense = get_object_or_404(
+        Expense,
+        id=expense_id,
+        student=request.user
+    )
+    expense.delete()
+    return redirect('budget')

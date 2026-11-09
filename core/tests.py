@@ -281,3 +281,168 @@ class StudySessionViewTests(TestCase):
             response.context['weekly_hours'],
             1.5
         )
+
+from datetime import date
+from decimal import Decimal
+
+from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
+
+from .models import Expense
+
+
+class BudgetTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='budgetuser',
+            password='testpass123'
+        )
+        self.other_user = User.objects.create_user(
+            username='otherbudgetuser',
+            password='testpass123'
+        )
+        self.client.force_login(self.user)
+
+    def test_budget_page_loads(self):
+        response = self.client.get(reverse('budget'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_add_expense(self):
+        response = self.client.post(reverse('budget_add'), {
+            'amount': '25.50',
+            'category': 'Food',
+            'expense_date': '2026-11-08',
+            'description': 'Groceries',
+        })
+
+        self.assertRedirects(response, reverse('budget'))
+        self.assertTrue(
+            Expense.objects.filter(
+                student=self.user,
+                amount=Decimal('25.50')
+            ).exists()
+        )
+
+    def test_edit_expense(self):
+        expense = Expense.objects.create(
+            student=self.user,
+            amount=Decimal('25.50'),
+            category='Food',
+            expense_date=date(2026, 11, 8),
+            description='Groceries'
+        )
+
+        response = self.client.post(
+            reverse('budget_edit', args=[expense.id]),
+            {
+                'amount': '30.00',
+                'category': 'Food',
+                'expense_date': '2026-11-08',
+                'description': 'Groceries',
+            }
+        )
+
+        self.assertRedirects(response, reverse('budget'))
+        expense.refresh_from_db()
+        self.assertEqual(expense.amount, Decimal('30.00'))
+
+    def test_delete_expense(self):
+        expense = Expense.objects.create(
+            student=self.user,
+            amount=Decimal('25.50'),
+            category='Food',
+            expense_date=date(2026, 11, 8),
+            description='Groceries'
+        )
+
+        response = self.client.post(
+            reverse('budget_delete', args=[expense.id])
+        )
+
+        self.assertRedirects(response, reverse('budget'))
+        self.assertFalse(
+            Expense.objects.filter(id=expense.id).exists()
+        )
+
+    def test_monthly_and_category_totals(self):
+        Expense.objects.create(
+            student=self.user,
+            amount=Decimal('25.50'),
+            category='Food',
+            expense_date=date(2026, 11, 8),
+            description='Groceries'
+        )
+        Expense.objects.create(
+            student=self.user,
+            amount=Decimal('10.00'),
+            category='Food',
+            expense_date=date(2026, 11, 9),
+            description='Lunch'
+        )
+
+        response = self.client.get(reverse('budget'))
+
+        self.assertEqual(
+            response.context['total'],
+            Decimal('35.50')
+        )
+        self.assertEqual(
+            list(response.context['monthly_totals'])[0]['total'],
+            Decimal('35.50')
+        )
+        self.assertEqual(
+            list(response.context['category_totals'])[0]['total'],
+            Decimal('35.50')
+        )
+
+    def test_cannot_edit_another_users_expense(self):
+        expense = Expense.objects.create(
+            student=self.other_user,
+            amount=Decimal('50.00'),
+            category='Other',
+            expense_date=date(2026, 11, 8),
+            description='Private expense'
+        )
+
+        response = self.client.get(
+            reverse('budget_edit', args=[expense.id])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_cannot_delete_another_users_expense(self):
+        expense = Expense.objects.create(
+            student=self.other_user,
+            amount=Decimal('50.00'),
+            category='Other',
+            expense_date=date(2026, 11, 8),
+            description='Private expense'
+        )
+
+        response = self.client.post(
+            reverse('budget_delete', args=[expense.id])
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(
+            Expense.objects.filter(id=expense.id).exists()
+        )
+
+    def test_other_users_expenses_are_hidden(self):
+        Expense.objects.create(
+            student=self.other_user,
+            amount=Decimal('50.00'),
+            category='Other',
+            expense_date=date(2026, 11, 8),
+            description='Private expense'
+        )
+
+        response = self.client.get(reverse('budget'))
+
+        self.assertEqual(
+            response.context['total'],
+            Decimal('0.00')
+        )
+        self.assertEqual(
+            len(response.context['expenses']),
+            0
+        )

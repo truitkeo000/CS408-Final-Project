@@ -1,0 +1,78 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Budget</h2>
+        <a href="{% url 'budget_add' %}" class="btn btn-primary">
+            Add Expense
+        </a>
+    </div>
+
+    <h4>Total Spending: ${{ total|floatformat:2 }}</h4>
+
+    <h5 class="mt-4">Monthly Totals</h5>
+    <ul class="list-group mb-4">
+        {% for item in monthly_totals %}
+            <li class="list-group-item">
+                {{ item.month|date:"F Y" }}:
+                ${{ item.total|floatformat:2 }}
+            </li>
+        {% empty %}
+            <li class="list-group-item">No expenses yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h5>Category Totals</h5>
+    <ul class="list-group mb-4">
+        {% for item in category_totals %}
+            <li class="list-group-item">
+                {{ item.category }}:
+                ${{ item.total|floatformat:2 }}
+            </li>
+        {% empty %}
+            <li class="list-group-item">No expenses yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h5>Expenses</h5>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.expense_date }}</td>
+                    <td>{{ expense.category }}</td>
+                    <td>{{ expense.description }}</td>
+                    <td>${{ expense.amount|floatformat:2 }}</td>
+                    <td>
+                        <a href="{% url 'budget_edit' expense.id %}"
+                           class="btn btn-sm btn-warning">Edit</a>
+                        <form method="post"
+                              action="{% url 'budget_delete' expense.id %}"
+                              class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="btn btn-sm btn-danger">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">No expenses recorded.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
