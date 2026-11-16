@@ -1,3 +1,4 @@
+from .forms import AssignmentForm
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -10,8 +11,8 @@ from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 from .forms import ExpenseForm
 from .models import Expense
-from .forms import StudentRegistrationForm, CalendarEventForm, StudySessionForm
-from .models import StudentProfile, CalendarEvent, StudySession
+from .forms import StudentRegistrationForm, CalendarEventForm, StudySessionForm, AssignmentForm
+from .models import StudentProfile, CalendarEvent, StudySession, Assignment
 
 
 def home(request):
@@ -319,3 +320,110 @@ def budget_delete(request, expense_id):
     )
     expense.delete()
     return redirect('budget')
+
+
+@login_required
+@require_POST
+def calendar_toggle_complete(request, event_id):
+    event = get_object_or_404(
+        CalendarEvent,
+        id=event_id,
+        student=request.user
+    )
+    event.completed = not event.completed
+    event.save(update_fields=['completed'])
+    return redirect('calendar')
+
+
+@login_required
+def assignment_detail(request, assignment_id):
+    assignment = get_object_or_404(
+        Assignment,
+        id=assignment_id,
+        student=request.user
+    )
+
+    return render(
+        request,
+        'core/assignment_detail.html',
+        {'assignment': assignment}
+    )
+
+
+@login_required
+def assignment_list(request):
+    assignments = Assignment.objects.filter(student=request.user)
+
+    q = request.GET.get('q', '').strip()
+    course = request.GET.get('course', '').strip()
+    status = request.GET.get('status', '').strip()
+
+    if q:
+        assignments = assignments.filter(title__icontains=q)
+
+    if course:
+        assignments = assignments.filter(course__iexact=course)
+
+    if status == 'completed':
+        assignments = assignments.filter(completed=True)
+    elif status == 'incomplete':
+        assignments = assignments.filter(completed=False)
+
+    courses = (
+        Assignment.objects.filter(student=request.user)
+        .order_by('course')
+        .values_list('course', flat=True)
+        .distinct()
+    )
+
+    return render(request, 'core/assignment_list.html', {
+        'assignments': assignments.order_by('due_date'),
+        'courses': courses,
+        'q': q,
+        'selected_course': course,
+        'selected_status': status,
+    })
+
+
+@login_required
+def assignment_add(request):
+    if request.method == 'POST':
+        form = AssignmentForm(request.POST)
+        if form.is_valid():
+            assignment = form.save(commit=False)
+            assignment.student = request.user
+            assignment.save()
+            return redirect('assignment_list')
+    else:
+        form = AssignmentForm()
+
+    return render(
+        request,
+        'core/assignment_form.html',
+        {'form': form}
+    )
+
+
+@login_required
+@require_POST
+def assignment_toggle_complete(request, assignment_id):
+    assignment = get_object_or_404(
+        Assignment,
+        id=assignment_id,
+        student=request.user
+    )
+    assignment.completed = not assignment.completed
+    assignment.save(update_fields=['completed'])
+    return redirect('assignment_list')
+
+
+@login_required
+@require_POST
+def assignment_delete(request, assignment_id):
+    assignment = get_object_or_404(
+        Assignment,
+        id=assignment_id,
+        student=request.user
+    )
+    assignment.delete()
+    return redirect('assignment_list')

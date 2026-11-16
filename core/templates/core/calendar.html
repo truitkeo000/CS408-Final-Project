@@ -68,6 +68,18 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
+                        <form method="post" action="{% url 'calendar_toggle_complete' event.id %}">
+                            {% csrf_token %}
+                            {% if event.completed %}
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                    Mark Incomplete
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-outline-success btn-sm">
+                                    Mark Complete
+                                </button>
+                            {% endif %}
+                        </form>
                         <a href="{% url 'calendar_edit' event.id %}"
                            class="btn btn-outline-primary btn-sm">
                             Edit

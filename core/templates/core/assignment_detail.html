@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Assignment Details</h2>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h3>{{ assignment.title }}</h3>
+
+            <p><strong>Course:</strong> {{ assignment.course }}</p>
+            <p><strong>Due Date:</strong>
+                {{ assignment.due_date|date:"M d, Y g:i A" }}
+            </p>
+
+            <p><strong>Description:</strong></p>
+            <p>{{ assignment.description|default:"No description provided." }}</p>
+
+            <p><strong>Status:</strong>
+                {% if assignment.completed %}
+                    <span class="badge bg-success">Completed</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark">Incomplete</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <a href="{% url 'assignment_list' %}" class="btn btn-secondary mt-3">
+        Back to Assignments
+    </a>
+</div>
+{% endblock %}

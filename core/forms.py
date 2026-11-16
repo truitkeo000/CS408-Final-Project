@@ -126,3 +126,49 @@ class ExpenseForm(forms.ModelForm):
             'expense_date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.TextInput(),
         }
+
+
+from .models import Assignment
+
+class AssignmentForm(forms.ModelForm):
+    class Meta:
+        model = Assignment
+        fields = [
+            'title',
+            'course',
+            'due_date',
+            'description',
+            'completed',
+        ]
+
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Assignment title'
+            }),
+            'course': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Course (e.g. CS 408)'
+            }),
+            'due_date': forms.DateTimeInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'datetime-local'
+                },
+                format='%Y-%m-%dT%H:%M'
+            ),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Assignment details'
+            }),
+            'completed': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['due_date'].input_formats = [
+            '%Y-%m-%dT%H:%M'
+        ]

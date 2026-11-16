@@ -1,0 +1,126 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <h1 class="mb-3">Assignments</h1>
+    <a href="{% url 'assignment_add' %}"
+       class="btn btn-primary mb-3">
+        + Add Assignment
+    </a>
+    <p class="text-muted">
+        View your coursework and upcoming deadlines.
+    </p>
+
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="q" class="form-label">Search by Name</label>
+            <input type="text" name="q" id="q"
+                   class="form-control"
+                   placeholder="Search assignments..."
+                   value="{{ q }}">
+        </div>
+
+        <div class="col-md-3">
+            <label for="course" class="form-label">Course</label>
+            <select name="course" id="course" class="form-select">
+                <option value="">All Courses</option>
+                {% for course in courses %}
+                    <option value="{{ course }}"
+                        {% if selected_course == course %}selected{% endif %}>
+                        {{ course }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="status" class="form-label">Status</label>
+            <select name="status" id="status" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="completed"
+                    {% if selected_status == 'completed' %}selected{% endif %}>
+                    Completed
+                </option>
+                <option value="incomplete"
+                    {% if selected_status == 'incomplete' %}selected{% endif %}>
+                    Incomplete
+                </option>
+            </select>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-primary">
+                Search
+            </button>
+            <a href="{% url 'assignment_list' %}"
+               class="btn btn-outline-secondary">
+                Clear
+            </a>
+        </div>
+    </form>
+
+    {% for assignment in assignments %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5>{{ assignment.title }}</h5>
+
+                <p class="mb-1">
+                    <strong>Course:</strong> {{ assignment.course }}
+                </p>
+
+                <p>
+                    <strong>Due:</strong>
+                    {{ assignment.due_date|date:"M d, Y g:i A" }}
+                </p>
+
+                {% if assignment.completed %}
+                    <span class="badge bg-success">Completed</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark">
+                        Incomplete
+                    </span>
+                {% endif %}
+
+                <form method="post"
+          action="{% url 'assignment_toggle_complete' assignment.id %}"
+          class="mt-3">
+        {% csrf_token %}
+        {% if assignment.completed %}
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                Mark Incomplete
+            </button>
+        {% else %}
+            <button type="submit" class="btn btn-outline-success btn-sm">
+                Mark Complete
+            </button>
+        {% endif %}
+    </form>
+
+    <div class="mt-3">
+                    <a href="{% url 'assignment_detail' assignment.id %}"
+                       class="btn btn-outline-primary btn-sm">
+                        View Details
+                    </a>
+                    <form method="post"
+                          action="{% url 'assignment_delete' assignment.id %}"
+                          class="d-inline"
+                          onsubmit="return confirm('Delete this assignment?');">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="btn btn-outline-danger btn-sm">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        {% if q or selected_course or selected_status %}
+            <p>No assignments match your search or filters.</p>
+        {% else %}
+            <p>No assignments have been added yet.</p>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}
