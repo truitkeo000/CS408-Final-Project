@@ -90,3 +90,27 @@ class Assignment(models.Model):
 
     def __str__(self):
         return f"{self.course}: {self.title}"
+
+
+class Goal(models.Model):
+    student = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='goals'
+    )
+    title = models.CharField(max_length=160)
+    description = models.TextField(blank=True)
+    target_value = models.PositiveIntegerField()
+    current_value = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def progress_percentage(self):
+        if self.target_value == 0:
+            return 0
+        return min(100, round(
+            (self.current_value / self.target_value) * 100
+        ))
+
+    def __str__(self):
+        return self.title

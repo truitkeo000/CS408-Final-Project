@@ -427,3 +427,116 @@ def assignment_delete(request, assignment_id):
     )
     assignment.delete()
     return redirect('assignment_list')
+
+
+from .models import Goal
+from .forms import GoalForm
+
+
+@login_required
+def goals(request):
+    user_goals = Goal.objects.filter(
+        student=request.user
+    ).order_by('-created_at')
+
+    return render(request, 'core/goals.html', {
+        'goals': user_goals,
+    })
+
+
+@login_required
+def goal_add(request):
+    if request.method == 'POST':
+        form = GoalForm(request.POST)
+        if form.is_valid():
+            goal = form.save(commit=False)
+            goal.student = request.user
+            goal.save()
+            return redirect('goals')
+    else:
+        form = GoalForm()
+
+    return render(request, 'core/goal_form.html', {
+        'form': form,
+        'page_title': 'Add Goal',
+    })
+
+
+@login_required
+def goal_edit(request, goal_id):
+    goal = get_object_or_404(
+        Goal,
+        id=goal_id,
+        student=request.user
+    )
+
+    if request.method == 'POST':
+        form = GoalForm(request.POST, instance=goal)
+        if form.is_valid():
+            form.save()
+            return redirect('goals')
+    else:
+        form = GoalForm(instance=goal)
+
+    return render(request, 'core/goal_form.html', {
+        'form': form,
+        'page_title': 'Edit Goal',
+    })
+
+
+@login_required
+@require_POST
+def goal_delete(request, goal_id):
+    goal = get_object_or_404(
+        Goal,
+        id=goal_id,
+        student=request.user
+    )
+    goal.delete()
+    return redirect('goals')
+
+
+@login_required
+def dashboard(request):
+    today = timezone.localdate()
+    now = timezone.now()
+
+    # Upcoming calendar events
+    upcoming_events = CalendarEvent.objects.filter(
+        student=request.user,
+        starts_at__gte=now,
+        completed=False
+    ).order_by('starts_at')[:5]
+
+    # Study time for the current week (Monday-Sunday)
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+
+    study_minutes = StudySession.objects.filter(
+        student=request.user,
+        study_date__range=(week_start, week_end)
+    ).aggregate(
+        total=Sum('duration_minutes')
+    )['total'] or 0
+
+    # Current goals
+    current_goals = Goal.objects.filter(
+        student=request.user
+    ).order_by('-created_at')[:5]
+
+    # Expenses for the current month
+    monthly_expenses = Expense.objects.filter(
+        student=request.user,
+        expense_date__year=today.year,
+        expense_date__month=today.month
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0.00')
+
+    return render(request, 'core/dashboard.html', {
+        'upcoming_events': upcoming_events,
+        'study_minutes': study_minutes,
+        'current_goals': current_goals,
+        'monthly_expenses': monthly_expenses,
+        'current_month': today.strftime('%B %Y'),
+    })

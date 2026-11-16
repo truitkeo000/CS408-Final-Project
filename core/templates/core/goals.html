@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>My Goals</h2>
+        <a href="{% url 'goal_add' %}" class="btn btn-primary">
+            + Add Goal
+        </a>
+    </div>
+
+    {% if goals %}
+        <div class="row">
+            {% for goal in goals %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ goal.title }}</h5>
+
+                            {% if goal.description %}
+                                <p class="text-muted">
+                                    {{ goal.description }}
+                                </p>
+                            {% endif %}
+
+                            <p class="mb-2">
+                                <strong>Progress:</strong>
+                                {{ goal.current_value }} /
+                                {{ goal.target_value }}
+                            </p>
+
+                            <div class="progress mb-2">
+                                <div
+                                    class="progress-bar"
+                                    role="progressbar"
+                                    style="width: {{ goal.progress_percentage }}%;"
+                                    aria-valuenow="{{ goal.progress_percentage }}"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100">
+                                    {{ goal.progress_percentage }}%
+                                </div>
+                            </div>
+
+                            <p class="text-muted small">
+                                {{ goal.progress_percentage }}% complete
+                            </p>
+
+                            <a href="{% url 'goal_edit' goal.id %}"
+                               class="btn btn-outline-primary btn-sm">
+                                Edit
+                            </a>
+
+                            <form method="post"
+                                  action="{% url 'goal_delete' goal.id %}"
+                                  class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('Delete this goal?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            You haven't created any goals yet.
+            Click <strong>Add Goal</strong> to get started!
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -172,3 +172,59 @@ class AssignmentForm(forms.ModelForm):
         self.fields['due_date'].input_formats = [
             '%Y-%m-%dT%H:%M'
         ]
+
+
+from .models import Goal
+
+
+class GoalForm(forms.ModelForm):
+    class Meta:
+        model = Goal
+        fields = [
+            'title',
+            'description',
+            'target_value',
+            'current_value',
+        ]
+
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter goal title'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Describe your goal'
+            }),
+            'target_value': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1
+            }),
+            'current_value': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0
+            }),
+        }
+
+    def clean_target_value(self):
+        target = self.cleaned_data['target_value']
+        if target < 1:
+            raise forms.ValidationError(
+                'Target must be greater than zero.'
+            )
+        return target
+
+    def clean(self):
+        cleaned_data = super().clean()
+        target = cleaned_data.get('target_value')
+        current = cleaned_data.get('current_value')
+
+        if target is not None and current is not None:
+            if current > target:
+                self.add_error(
+                    'current_value',
+                    'Current progress cannot exceed the target.'
+                )
+
+        return cleaned_data

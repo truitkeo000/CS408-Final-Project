@@ -1,0 +1,134 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-4">
+        <h1 class="fw-bold">My Dashboard</h1>
+        <p class="text-muted">
+            Your Campus Compass overview
+        </p>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Calendar -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">Upcoming Events</h4>
+                        <a href="{% url 'calendar' %}"
+                           class="btn btn-sm btn-outline-primary">
+                            View Calendar
+                        </a>
+                    </div>
+
+                    {% for event in upcoming_events %}
+                        <div class="border-bottom py-2">
+                            <strong>{{ event.title }}</strong>
+                            <div class="text-muted small">
+                                {{ event.starts_at|date:"M d, Y g:i A" }}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">
+                            No upcoming events.
+                        </p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Study Log -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">Study Log</h4>
+                        <a href="{% url 'study' %}"
+                           class="btn btn-sm btn-outline-primary">
+                            View Study Log
+                        </a>
+                    </div>
+
+                    <p class="text-muted mb-2">
+                        Total study time this week
+                    </p>
+                    <h2 class="fw-bold text-primary">
+                        {{ study_minutes }} minutes
+                    </h2>
+                    <p class="text-muted small">
+                        Monday through Sunday
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">Goals</h4>
+                        <a href="{% url 'goals' %}"
+                           class="btn btn-sm btn-outline-primary">
+                            View Goals
+                        </a>
+                    </div>
+
+                    {% for goal in current_goals %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ goal.title }}</strong>
+                                <span>
+                                    {{ goal.progress_percentage }}%
+                                </span>
+                            </div>
+
+                            <div class="progress mt-2">
+                                <div class="progress-bar"
+                                     role="progressbar"
+                                     style="width: {{ goal.progress_percentage }}%;"
+                                     aria-valuenow="{{ goal.progress_percentage }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">
+                            No goals created yet.
+                        </p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">Budget</h4>
+                        <a href="{% url 'budget' %}"
+                           class="btn btn-sm btn-outline-primary">
+                            View Budget
+                        </a>
+                    </div>
+
+                    <p class="text-muted mb-2">
+                        Total expenses for {{ current_month }}
+                    </p>
+                    <h2 class="fw-bold text-primary">
+                        ${{ monthly_expenses|floatformat:2 }}
+                    </h2>
+                    <p class="text-muted small">
+                        Based on your recorded expenses
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

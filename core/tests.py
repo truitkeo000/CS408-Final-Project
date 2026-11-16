@@ -446,3 +446,296 @@ class BudgetTests(TestCase):
             len(response.context['expenses']),
             0
         )
+
+
+from .models import Goal
+from .forms import GoalForm
+
+
+class GoalTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="goal_student",
+            password="TestPassword123!"
+        )
+        self.other_user = User.objects.create_user(
+            username="other_goal_student",
+            password="TestPassword123!"
+        )
+        self.goal = Goal.objects.create(
+            student=self.user,
+            title="Complete CS408",
+            description="Finish all checkpoints",
+            target_value=10,
+            current_value=5
+        )
+
+    def test_goal_progress_percentage(self):
+        self.assertEqual(self.goal.progress_percentage, 50)
+
+        self.goal.current_value = 7
+        self.assertEqual(self.goal.progress_percentage, 70)
+
+        self.goal.current_value = 10
+        self.assertEqual(self.goal.progress_percentage, 100)
+
+    def test_goal_form_rejects_progress_above_target(self):
+        form = GoalForm(data={
+            "title": "Invalid Goal",
+            "description": "Testing validation",
+            "target_value": 5,
+            "current_value": 8,
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("current_value", form.errors)
+
+    def test_goals_require_login(self):
+        response = self.client.get(reverse("goals"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_goals_page_shows_own_goal(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("goals"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Complete CS408")
+        self.assertContains(response, "50%")
+
+    def test_goals_page_hides_other_students_goals(self):
+        self.client.force_login(self.other_user)
+
+        response = self.client.get(reverse("goals"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Complete CS408")
+
+    def test_create_goal(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse("goal_add"), {
+            "title": "Study Python",
+            "description": "Practice Django",
+            "target_value": 20,
+            "current_value": 4,
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            Goal.objects.filter(
+                student=self.user,
+                title="Study Python"
+            ).exists()
+        )
+
+    def test_edit_goal(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("goal_edit", args=[self.goal.id]),
+            {
+                "title": "Complete CS408",
+                "description": "Finish all checkpoints",
+                "target_value": 10,
+                "current_value": 8,
+            }
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.goal.refresh_from_db()
+        self.assertEqual(self.goal.current_value, 8)
+        self.assertEqual(self.goal.progress_percentage, 80)
+
+    def test_delete_goal(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("goal_delete", args=[self.goal.id])
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            Goal.objects.filter(id=self.goal.id).exists()
+        )
+
+    def test_cannot_edit_another_students_goal(self):
+        self.client.force_login(self.other_user)
+
+        response = self.client.post(
+            reverse("goal_edit", args=[self.goal.id]),
+            {
+                "title": "Changed",
+                "description": "",
+                "target_value": 10,
+                "current_value": 9,
+            }
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.goal.refresh_from_db()
+        self.assertEqual(self.goal.current_value, 5)
+
+    def test_cannot_delete_another_students_goal(self):
+        self.client.force_login(self.other_user)
+
+        response = self.client.post(
+            reverse("goal_delete", args=[self.goal.id])
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(
+            Goal.objects.filter(id=self.goal.id).exists()
+        )
+
+    def test_goal_delete_requires_post(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("goal_delete", args=[self.goal.id])
+        )
+
+        self.assertEqual(response.status_code, 405)
+        self.assertTrue(
+            Goal.objects.filter(id=self.goal.id).exists()
+        )
+
+
+from decimal import Decimal
+from .models import Expense
+
+
+class DashboardTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="dashboard_student",
+            password="TestPassword123!"
+        )
+        self.other_user = User.objects.create_user(
+            username="other_dashboard_student",
+            password="TestPassword123!"
+        )
+
+    def test_dashboard_requires_login(self):
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_dashboard_loads(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "My Dashboard")
+        self.assertContains(response, "Upcoming Events")
+        self.assertContains(response, "Study Log")
+        self.assertContains(response, "Goals")
+        self.assertContains(response, "Budget")
+
+    def test_dashboard_displays_own_goal(self):
+        Goal.objects.create(
+            student=self.user,
+            title="Finish Checkpoint 5",
+            target_value=10,
+            current_value=6
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertContains(response, "Finish Checkpoint 5")
+        self.assertContains(response, "60%")
+
+    def test_dashboard_hides_other_students_goals(self):
+        Goal.objects.create(
+            student=self.other_user,
+            title="Private Goal",
+            target_value=10,
+            current_value=5
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertNotContains(response, "Private Goal")
+
+    def test_dashboard_study_total(self):
+        today = timezone.localdate()
+
+        StudySession.objects.create(
+            student=self.user,
+            subject="CS408",
+            study_date=today,
+            duration_minutes=45
+        )
+
+        StudySession.objects.create(
+            student=self.user,
+            subject="CS354",
+            study_date=today,
+            duration_minutes=30
+        )
+
+        StudySession.objects.create(
+            student=self.other_user,
+            subject="Private Study",
+            study_date=today,
+            duration_minutes=100
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.context["study_minutes"], 75)
+
+    def test_dashboard_monthly_expenses(self):
+        today = timezone.localdate()
+
+        Expense.objects.create(
+            student=self.user,
+            amount=Decimal("25.50"),
+            category="Food",
+            expense_date=today,
+            description="Lunch"
+        )
+
+        Expense.objects.create(
+            student=self.other_user,
+            amount=Decimal("100.00"),
+            category="Other",
+            expense_date=today,
+            description="Private expense"
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(
+            response.context["monthly_expenses"],
+            Decimal("25.50")
+        )
+
+    def test_dashboard_upcoming_events(self):
+        now = timezone.now()
+
+        CalendarEvent.objects.create(
+            student=self.user,
+            title="Upcoming Exam",
+            event_type="academic",
+            starts_at=now + timedelta(days=2)
+        )
+
+        CalendarEvent.objects.create(
+            student=self.other_user,
+            title="Private Event",
+            event_type="personal",
+            starts_at=now + timedelta(days=3)
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertContains(response, "Upcoming Exam")
+        self.assertNotContains(response, "Private Event")

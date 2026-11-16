@@ -10,8 +10,7 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
 
     # Dashboard
-    path('dashboard/', views.section_placeholder,
-         {'section': 'dashboard'}, name='dashboard'),
+    path('dashboard/', views.dashboard, name='dashboard'),
 
     # Calendar
     path('calendar/', views.calendar, name='calendar'),
@@ -64,8 +63,12 @@ urlpatterns = [
           views.budget_delete, name='budget_delete'),
 
     # Future sections
-    path('goals/', views.section_placeholder,
-         {'section': 'goals'}, name='goals'),
+    path('goals/', views.goals, name='goals'),
+    path('goals/add/', views.goal_add, name='goal_add'),
+    path('goals/<int:goal_id>/edit/',
+         views.goal_edit, name='goal_edit'),
+    path('goals/<int:goal_id>/delete/',
+         views.goal_delete, name='goal_delete'),
     path('search/', views.section_placeholder,
          {'section': 'search'}, name='search'),
     path('canvas/', views.section_placeholder,
